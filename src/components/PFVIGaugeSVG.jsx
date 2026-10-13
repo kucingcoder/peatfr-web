@@ -9,18 +9,20 @@ export default function PFVIGaugeSVG({ pfviValue = 118 }) {
   const safeValue = Math.max(0, Math.min(300, Number(pfviValue) || 0));
   const category = getPFVIRiskCategory(safeValue);
 
-  // Sudut busur gauge: -180 derajat (kiri) s/d 0 derajat (kanan)
+  // Sudut busur gauge: -180 derajat (kiri, nilai 0) s/d 0 derajat (kanan, nilai 300)
   // Rentang 180 derajat untuk nilai 0 s/d 300
   // Sudut = -180 + (val / 300) * 180
   const angleDeg = -180 + (safeValue / 300) * 180;
-  const angleRad = (angleDeg * Math.PI) / 180;
+  // Sudut rotasi jarum relatif terhadap posisi default vertikal (12 o'clock):
+  // Nilai 0   -> angleDeg = -180 -> rotation = -90° (horizontal kiri)
+  // Nilai 150 -> angleDeg = -90  -> rotation = 0°   (vertikal atas)
+  // Nilai 300 -> angleDeg = 0    -> rotation = +90° (horizontal kanan)
+  const needleRotation = angleDeg + 90;
 
-  // Koordinat jarum penunjuk
+  // Koordinat poros tengah & panjang jarum
   const centerX = 160;
   const centerY = 150;
   const needleLength = 95;
-  const needleTipX = centerX + needleLength * Math.cos(angleRad);
-  const needleTipY = centerY + needleLength * Math.sin(angleRad);
 
   return (
     <div className="card" style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', textAlign: 'center' }}>
@@ -39,7 +41,8 @@ export default function PFVIGaugeSVG({ pfviValue = 118 }) {
         aria-label={`Gauge Indeks Kerentanan Gambut ${safeValue.toFixed(1)}`}
       >
         <defs>
-          <filter id="gaugeShadow" x="-10%" y="-10%" width="120%" height="120%">
+          {/* Filter bayangan menggunakan filterUnits="userSpaceOnUse" agar tidak kolaps saat jarum horizontal (nilai 0 / 300) */}
+          <filter id="gaugeShadow" x="-20" y="-20" width="360" height="240" filterUnits="userSpaceOnUse">
             <feDropShadow dx="0" dy="2" stdDeviation="3" floodOpacity="0.3" />
           </filter>
         </defs>
@@ -106,17 +109,21 @@ export default function PFVIGaugeSVG({ pfviValue = 118 }) {
         <text x="285" y="172" fill="var(--text-muted)" fontSize="11" fontWeight="600" textAnchor="middle">300</text>
 
         {/* Jarum Penunjuk Gauge */}
-        <line
-          x1={centerX}
-          y1={centerY}
-          x2={needleTipX}
-          y2={needleTipY}
-          stroke="var(--text-primary)"
-          strokeWidth="4"
-          strokeLinecap="round"
-          filter="url(#gaugeShadow)"
-          style={{ transition: 'all 0.35s cubic-bezier(0.4, 0, 0.2, 1)' }}
-        />
+        <g
+          transform={`rotate(${needleRotation} ${centerX} ${centerY})`}
+          style={{
+            transform: `rotate(${needleRotation}deg)`,
+            transformOrigin: `${centerX}px ${centerY}px`,
+            transition: 'transform 0.4s cubic-bezier(0.4, 0, 0.2, 1)'
+          }}
+        >
+          {/* Jarum presisi 2D tapered dengan rounded tip agar selalu memiliki bounding box positif */}
+          <path
+            d={`M ${centerX - 2.5} ${centerY} L ${centerX - 1} ${centerY - needleLength} Q ${centerX} ${centerY - needleLength - 2} ${centerX + 1} ${centerY - needleLength} L ${centerX + 2.5} ${centerY} Z`}
+            fill="var(--text-primary)"
+            filter="url(#gaugeShadow)"
+          />
+        </g>
         
         {/* Titik Poros Tengah */}
         <circle cx={centerX} cy={centerY} r="10" fill="var(--text-primary)" />
