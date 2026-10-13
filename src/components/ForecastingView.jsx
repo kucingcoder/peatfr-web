@@ -5,17 +5,17 @@ import { ImputationMethods, ForecastingModels } from '../utils/peatfrMath';
 /**
  * ForecastingView
  * Modul Peramalan Runtun Waktu Berbasis ARIMA + Box-Cox, LSTM, dan GRU
+ * Menggunakan data sensor riil dari src/assets/Data Testing.csv (192 baris observasi)
  * Menampilkan plot kurva penuh dan panel zoom-in 25 titik khas paket peatfr
  */
 export default function ForecastingView() {
-  const [selectedDatasetId, setSelectedDatasetId] = useState('kampar-riau');
   const [selectedVariable, setSelectedVariable] = useState('WT');
   const [selectedModel, setSelectedModel] = useState('arima'); // 'arima', 'lstm', 'gru'
   const [horizonH, setHorizonH] = useState(4); // default h = 4
 
   const currentDataset = useMemo(() => {
-    return SAMPLE_DATASETS.find(d => d.id === selectedDatasetId) || SAMPLE_DATASETS[0];
-  }, [selectedDatasetId]);
+    return SAMPLE_DATASETS[0];
+  }, []);
 
   // Siapkan data bersih (dilakukan imputasi terlebih dahulu seperti di fungsi autopeatfr)
   const cleanSeries = useMemo(() => {
@@ -39,7 +39,7 @@ export default function ForecastingView() {
   const variableMeta = {
     WT: { label: 'Muka Air Tanah (WT)', unit: 'meter' },
     SM: { label: 'Kelembaban Tanah (SM)', unit: '%' },
-    Rf: { label: 'Curah Hujan (Rf)', unit: 'mm/hari' },
+    Rf: { label: 'Curah Hujan (Rf)', unit: 'mm' },
     Temp: { label: 'Suhu Udara (Temp)', unit: '°C' }
   };
 
@@ -51,27 +51,24 @@ export default function ForecastingView() {
           <div>
             <h2 className="card-title">Peramalan Runtun Waktu (Time Series Forecasting)</h2>
             <p className="card-subtitle">
-              Proyeksikan dinamika hidrologi gambut ke masa depan menggunakan model stokastik ARIMA atau deep learning rekuren (LSTM & GRU).
+              Proyeksikan dinamika hidrologi gambut ke masa depan menggunakan data dari <strong style={{ color: 'var(--text-primary)' }}>src/assets/Data Testing.csv</strong> dengan model stokastik ARIMA atau deep learning rekuren (LSTM & GRU).
             </p>
           </div>
 
-          <div style={{ display: 'flex', gap: '0.75rem', flexWrap: 'wrap' }}>
-            {/* Lokasi */}
-            <div>
-              <label htmlFor="f-dataset-select" style={{ fontSize: '0.75rem', color: 'var(--text-muted)', display: 'block', marginBottom: '2px' }}>
-                Lokasi Pengamatan:
-              </label>
-              <select
-                id="f-dataset-select"
-                value={selectedDatasetId}
-                onChange={(e) => setSelectedDatasetId(e.target.value)}
-                className="input-select"
-                style={{ minHeight: '38px', padding: '4px 10px', fontSize: '0.85rem' }}
-              >
-                {SAMPLE_DATASETS.map(d => (
-                  <option key={d.id} value={d.id}>{d.name}</option>
-                ))}
-              </select>
+          <div style={{ display: 'flex', gap: '0.75rem', flexWrap: 'wrap', alignItems: 'center' }}>
+            {/* Status Dataset */}
+            <div style={{
+              display: 'inline-flex',
+              alignItems: 'center',
+              padding: '6px 12px',
+              borderRadius: '8px',
+              backgroundColor: 'var(--bg-surface)',
+              border: '1px solid var(--border-subtle)',
+              fontSize: '0.82rem',
+              color: 'var(--text-primary)',
+              fontWeight: 600
+            }}>
+              Data Testing.csv ({cleanSeries.length} Titik)
             </div>
 
             {/* Variabel */}
@@ -149,10 +146,10 @@ export default function ForecastingView() {
         <div className="card">
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.75rem' }}>
             <h3 style={{ fontSize: '0.98rem', margin: 0 }}>
-              Plot Lengkap: {selectedModel.toUpperCase()} Forecast
+              Plot Lengkap: {selectedModel.toUpperCase()} ({variableMeta[selectedVariable].label})
             </h3>
             <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>
-              Total: {cleanSeries.length + horizonH} Titik Waktu
+              Total: {cleanSeries.length + horizonH} Titik Observasi
             </span>
           </div>
 
@@ -217,11 +214,11 @@ export default function ForecastingView() {
           <div style={{ display: 'flex', gap: '1rem', marginTop: '0.75rem', fontSize: '0.78rem', justifyContent: 'center' }}>
             <span style={{ display: 'flex', alignItems: 'center', gap: '4px', color: '#0ea5e9' }}>
               <span style={{ width: '12px', height: '2px', backgroundColor: '#0ea5e9' }} />
-              Data Historis
+              Data Historis (192 Observasi)
             </span>
             <span style={{ display: 'flex', alignItems: 'center', gap: '4px', color: '#ef4444' }}>
               <span style={{ width: '12px', height: '2px', backgroundColor: '#ef4444' }} />
-              Proyeksi Masa Depan
+              Proyeksi Masa Depan (h={horizonH})
             </span>
           </div>
         </div>
@@ -302,7 +299,7 @@ export default function ForecastingView() {
           <div style={{ display: 'flex', gap: '1rem', marginTop: '0.75rem', fontSize: '0.78rem', justifyContent: 'center' }}>
             <span style={{ display: 'flex', alignItems: 'center', gap: '4px', color: '#0ea5e9' }}>
               <span style={{ width: '12px', height: '2px', backgroundColor: '#0ea5e9' }} />
-              25 Titik Terakhir
+              25 Titik Terakhir (Observasi 168-192)
             </span>
             <span style={{ display: 'flex', alignItems: 'center', gap: '4px', color: '#ef4444' }}>
               <span style={{ width: '8px', height: '8px', borderRadius: '50%', backgroundColor: '#ef4444' }} />
@@ -367,7 +364,7 @@ export default function ForecastingView() {
 
                 return (
                   <tr key={idx}>
-                    <td><strong>Hari ke-{idx + 1} ke Depan (h = {idx + 1})</strong></td>
+                    <td><strong>Langkah ke-{idx + 1} ke Depan (h = {idx + 1})</strong></td>
                     <td style={{ color: '#ef4444', fontWeight: 700 }}>{val.toFixed(3)}</td>
                     <td style={{ color: delta >= 0 ? '#10b981' : '#f97316' }}>
                       {delta >= 0 ? `+${delta.toFixed(3)}` : delta.toFixed(3)}

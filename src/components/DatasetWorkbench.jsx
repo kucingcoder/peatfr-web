@@ -4,11 +4,11 @@ import { ImputationMethods, simulatePFVI, optimizeParameters, getPFVIRiskCategor
 
 /**
  * DatasetWorkbench
- * Eksplorasi data sensor lahan gambut Indonesia, pengunggahan CSV kustom,
- * kalibrasi Nelder-Mead, dan ekspor laporan mitigasi.
+ * Eksplorasi dataset pengujian hidrologi gambut riil dari src/assets/Data Testing.csv,
+ * opsi pengunggahan CSV kustom, kalibrasi parameter Nelder-Mead, dan ekspor laporan.
  */
 export default function DatasetWorkbench() {
-  const [selectedDatasetId, setSelectedDatasetId] = useState('kampar-riau');
+  const [selectedDatasetId, setSelectedDatasetId] = useState('data-testing');
   const [customDataset, setCustomDataset] = useState(null);
   const [isOptimizing, setIsOptimizing] = useState(false);
   const [calibrationResult, setCalibrationResult] = useState(null);
@@ -26,7 +26,7 @@ export default function DatasetWorkbench() {
     const tempClean = ImputationMethods.spline(activeData.Temp);
 
     const params = calibrationResult ? calibrationResult.params : [0.25, 0.18, 1.45, 0.35];
-    const sim = simulatePFVI(wtClean, smClean, rfClean, tempClean, params, activeData.R0 || 3000, activeData.dt || 1);
+    const sim = simulatePFVI(wtClean, smClean, rfClean, tempClean, params, activeData.R0 || 2850, activeData.dt || 1);
 
     const latestPfvi = sim.pfvi[sim.pfvi.length - 1] || 0;
     const latestRisk = getPFVIRiskCategory(latestPfvi);
@@ -43,7 +43,7 @@ export default function DatasetWorkbench() {
     };
   }, [activeData, calibrationResult]);
 
-  // Handle Unggah CSV
+  // Handle Unggah CSV Kustom
   const handleFileUpload = (e) => {
     const file = e.target.files[0];
     if (!file) return;
@@ -77,16 +77,15 @@ export default function DatasetWorkbench() {
 
       setCustomDataset({
         id: 'custom',
-        name: file.name.replace('.csv', ''),
-        province: 'Data Unggahan Pengguna',
-        ecosystemType: 'CSV Dataset Eksternal',
-        description: `Dataset kustom berhasil diimpor dengan ${lines.length - 1} baris observasi waktu.`,
+        name: file.name,
+        fileName: file.name,
+        description: `Dataset CSV kustom diunggah dengan ${lines.length - 1} baris observasi sensor.`,
         dates,
         WT,
         SM,
         Rf,
         Temp,
-        R0: 2900,
+        R0: 2850,
         dt: 1
       });
       setSelectedDatasetId('custom');
@@ -104,7 +103,7 @@ export default function DatasetWorkbench() {
         computedAnalysis.smClean,
         computedAnalysis.rfClean,
         computedAnalysis.tempClean,
-        activeData.R0 || 3000,
+        activeData.R0 || 2850,
         activeData.dt || 1
       );
       setCalibrationResult(res);
@@ -114,17 +113,17 @@ export default function DatasetWorkbench() {
 
   // Ekspor CSV
   const exportCSV = () => {
-    let csv = 'Tanggal,WT_Obs,WT_Imputed,SM_Obs,SM_Imputed,Rf_Obs,Rf_Imputed,Temp_Obs,Temp_Imputed,DI_Obs,PFVI_Index\n';
+    let csv = 'Waktu,WT_Obs,WT_Imputed,SM_Obs,SM_Imputed,Rf_Obs,Rf_Imputed,Temp_Obs,Temp_Imputed,DI_Obs,PFVI_Index\n';
     activeData.dates.forEach((d, i) => {
       const row = [
         d,
-        activeData.WT[i] !== null ? activeData.WT[i] : 'NA',
+        activeData.WT[i] !== null && activeData.WT[i] !== undefined ? activeData.WT[i] : 'NA',
         computedAnalysis.wtClean[i].toFixed(3),
-        activeData.SM[i] !== null ? activeData.SM[i] : 'NA',
+        activeData.SM[i] !== null && activeData.SM[i] !== undefined ? activeData.SM[i] : 'NA',
         computedAnalysis.smClean[i].toFixed(2),
-        activeData.Rf[i] !== null ? activeData.Rf[i] : 'NA',
+        activeData.Rf[i] !== null && activeData.Rf[i] !== undefined ? activeData.Rf[i] : 'NA',
         computedAnalysis.rfClean[i].toFixed(2),
-        activeData.Temp[i] !== null ? activeData.Temp[i] : 'NA',
+        activeData.Temp[i] !== null && activeData.Temp[i] !== undefined ? activeData.Temp[i] : 'NA',
         computedAnalysis.tempClean[i].toFixed(2),
         computedAnalysis.diObs[i].toFixed(2),
         computedAnalysis.pfvi[i].toFixed(2)
@@ -136,7 +135,7 @@ export default function DatasetWorkbench() {
     const url = URL.createObjectURL(blob);
     const link = document.createElement('a');
     link.href = url;
-    link.setAttribute('download', `PeatFR_Laporan_${activeData.id}.csv`);
+    link.setAttribute('download', `PeatFR_Laporan_${(activeData.fileName || activeData.id).replace(/\s+/g, '_')}`);
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
@@ -148,24 +147,38 @@ export default function DatasetWorkbench() {
       <div className="card">
         <div className="card-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: '1rem' }}>
           <div>
-            <h2 className="card-title">Eksplorasi Data Lapangan & Unggah CSV</h2>
+            <h2 className="card-title">Dataset Pengujian Sensor & Unggah CSV</h2>
             <p className="card-subtitle">
-              Pilih dari stasiun pemantauan gambut benchmark Indonesia atau unggah berkas CSV data telemetri Anda sendiri.
+              Menggunakan data sensor riil dari berkas <strong style={{ color: 'var(--text-primary)' }}>src/assets/Data Testing.csv</strong> (192 baris observasi sensor) atau unggah berkas CSV telemetri Anda sendiri.
             </p>
           </div>
 
           <div style={{ display: 'flex', gap: '0.75rem', flexWrap: 'wrap', alignItems: 'center' }}>
-            <select
-              value={selectedDatasetId}
-              onChange={(e) => setSelectedDatasetId(e.target.value)}
-              className="input-select"
-              style={{ minHeight: '40px', width: 'auto', fontSize: '0.88rem' }}
-            >
-              {SAMPLE_DATASETS.map(d => (
-                <option key={d.id} value={d.id}>{d.name} ({d.province})</option>
-              ))}
-              {customDataset && <option value="custom">File Kustom: {customDataset.name}</option>}
-            </select>
+            {customDataset ? (
+              <select
+                value={selectedDatasetId}
+                onChange={(e) => setSelectedDatasetId(e.target.value)}
+                className="input-select"
+                style={{ minHeight: '40px', width: 'auto', fontSize: '0.88rem' }}
+              >
+                <option value="data-testing">Data Testing.csv (Bawaan - 192 Baris)</option>
+                <option value="custom">File Kustom: {customDataset.name}</option>
+              </select>
+            ) : (
+              <div style={{
+                display: 'inline-flex',
+                alignItems: 'center',
+                padding: '6px 14px',
+                borderRadius: '8px',
+                backgroundColor: 'var(--bg-surface)',
+                border: '1px solid var(--border-subtle)',
+                fontSize: '0.85rem',
+                color: 'var(--text-primary)',
+                fontWeight: 600
+              }}>
+                Berkas: Data Testing.csv (192 Baris)
+              </div>
+            )}
 
             <label className="btn btn-secondary" style={{ minHeight: '40px', padding: '6px 14px', fontSize: '0.85rem', cursor: 'pointer' }}>
               <span>Unggah File CSV</span>
@@ -183,10 +196,10 @@ export default function DatasetWorkbench() {
           </div>
         </div>
 
-        {/* Info Ringkas Ekosistem Terpilih */}
+        {/* Ringkasan Metadata Riil Dataset */}
         <div style={{
           display: 'grid',
-          gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))',
+          gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))',
           gap: '1rem',
           padding: '1rem',
           backgroundColor: 'var(--bg-surface)',
@@ -194,12 +207,16 @@ export default function DatasetWorkbench() {
           border: '1px solid var(--border-subtle)'
         }}>
           <div>
-            <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', textTransform: 'uppercase' }}>Tipe Ekosistem</div>
-            <div style={{ fontSize: '0.92rem', fontWeight: 700, color: 'var(--text-primary)' }}>{activeData.ecosystemType}</div>
+            <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', textTransform: 'uppercase' }}>Sumber Dataset</div>
+            <div style={{ fontSize: '0.92rem', fontWeight: 700, color: 'var(--text-primary)' }}>{activeData.fileName || activeData.name}</div>
           </div>
           <div>
-            <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', textTransform: 'uppercase' }}>Kedalaman Gambut</div>
-            <div style={{ fontSize: '0.92rem', fontWeight: 700, color: 'var(--color-moss)' }}>{activeData.peatDepth || 'Variatif'}</div>
+            <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', textTransform: 'uppercase' }}>Total Observasi Waktu</div>
+            <div style={{ fontSize: '0.92rem', fontWeight: 700, color: 'var(--color-moss)' }}>{activeData.dates.length} Titik Rekaman Sensor</div>
+          </div>
+          <div>
+            <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', textTransform: 'uppercase' }}>Variabel Terukur</div>
+            <div style={{ fontSize: '0.88rem', fontWeight: 600, color: 'var(--text-secondary)' }}>Temp (°C), WT (m), SM (%), Rf (mm)</div>
           </div>
           <div>
             <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', textTransform: 'uppercase' }}>Status Kerentanan Akhir</div>
@@ -216,7 +233,7 @@ export default function DatasetWorkbench() {
           <div>
             <h3 className="card-title">Kalibrasi Parameter Van Genuchten (Nelder-Mead)</h3>
             <p className="card-subtitle">
-              Sesuai firepredict() di paket peatfr: kalibrasi [aH, bH, n, alpha] untuk meminimalkan deviasi indeks.
+              Sesuai firepredict() di paket peatfr: kalibrasi [aH, bH, n, alpha] pada seluruh 192 baris data observasi untuk meminimalkan deviasi indeks.
             </p>
           </div>
           <button
@@ -259,9 +276,9 @@ export default function DatasetWorkbench() {
       {/* Tabel Data Sensor Lengkap */}
       <div className="card">
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.75rem' }}>
-          <h3 className="card-title">Tabel Runtun Waktu Sensor & Nilai Imputasi</h3>
+          <h3 className="card-title">Tabel Runtun Waktu Sensor & Nilai Dihitung</h3>
           <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>
-            Menampilkan {activeData.dates.length} Titik Observasi
+            Menampilkan {activeData.dates.length} Titik Observasi Lengkap
           </span>
         </div>
 
@@ -269,21 +286,26 @@ export default function DatasetWorkbench() {
           <table className="data-table">
             <thead>
               <tr>
-                <th>Waktu</th>
+                <th>Titik Waktu</th>
+                <th>Suhu (Temp, °C)</th>
                 <th>Muka Air (WT, m)</th>
                 <th>Kelembaban (SM, %)</th>
                 <th>Curah Hujan (Rf, mm)</th>
-                <th>Suhu (Temp, °C)</th>
                 <th>PFVI Dihitung</th>
                 <th>Tingkat Risiko</th>
               </tr>
             </thead>
             <tbody>
               {activeData.dates.map((d, i) => {
-                const isWTNa = activeData.WT[i] === null;
-                const isSMNa = activeData.SM[i] === null;
-                const isRfNa = activeData.Rf[i] === null;
-                const isTempNa = activeData.Temp[i] === null;
+                const wtVal = activeData.WT[i];
+                const smVal = activeData.SM[i];
+                const rfVal = activeData.Rf[i];
+                const tempVal = activeData.Temp[i];
+
+                const isWTNa = wtVal === null || wtVal === undefined || isNaN(wtVal);
+                const isSMNa = smVal === null || smVal === undefined || isNaN(smVal);
+                const isRfNa = rfVal === null || rfVal === undefined || isNaN(rfVal);
+                const isTempNa = tempVal === null || tempVal === undefined || isNaN(tempVal);
 
                 const pfviVal = computedAnalysis.pfvi[i];
                 const riskCat = getPFVIRiskCategory(pfviVal);
@@ -292,31 +314,31 @@ export default function DatasetWorkbench() {
                   <tr key={i}>
                     <td><strong>{d}</strong></td>
                     <td>
-                      {isWTNa ? (
-                        <span className="missing-cell">NA → {computedAnalysis.wtClean[i].toFixed(2)}</span>
+                      {isTempNa ? (
+                        <span className="missing-cell">NA → {computedAnalysis.tempClean[i].toFixed(1)}°C</span>
                       ) : (
-                        activeData.WT[i].toFixed(2)
+                        `${tempVal.toFixed(1)}°C`
+                      )}
+                    </td>
+                    <td>
+                      {isWTNa ? (
+                        <span className="missing-cell">NA → {computedAnalysis.wtClean[i].toFixed(2)}m</span>
+                      ) : (
+                        `${wtVal.toFixed(3)}m`
                       )}
                     </td>
                     <td>
                       {isSMNa ? (
                         <span className="missing-cell">NA → {computedAnalysis.smClean[i].toFixed(1)}%</span>
                       ) : (
-                        `${activeData.SM[i].toFixed(1)}%`
+                        `${smVal.toFixed(2)}%`
                       )}
                     </td>
                     <td>
                       {isRfNa ? (
-                        <span className="missing-cell">NA → {computedAnalysis.rfClean[i].toFixed(1)}</span>
+                        <span className="missing-cell">NA → {computedAnalysis.rfClean[i].toFixed(2)}mm</span>
                       ) : (
-                        activeData.Rf[i].toFixed(1)
-                      )}
-                    </td>
-                    <td>
-                      {isTempNa ? (
-                        <span className="missing-cell">NA → {computedAnalysis.tempClean[i].toFixed(1)}°C</span>
-                      ) : (
-                        `${activeData.Temp[i].toFixed(1)}°C`
+                        `${rfVal.toFixed(4)}mm`
                       )}
                     </td>
                     <td style={{ fontWeight: 700, color: riskCat.color }}>

@@ -9,14 +9,17 @@ import Footer from './components/Footer';
 
 export default function App() {
   const [activeTab, setActiveTab] = useState('simulator');
-  const [theme, setTheme] = useState('dark');
+  const [theme, setTheme] = useState(() => {
+    if (typeof window !== 'undefined') {
+      return localStorage.getItem('peatfr-theme') || 'dark';
+    }
+    return 'dark';
+  });
 
-  // Muat preferensi tema dari localStorage jika tersedia
+  // Sinkronisasi data-theme saat tema berubah
   useEffect(() => {
-    const savedTheme = localStorage.getItem('peatfr-theme') || 'dark';
-    setTheme(savedTheme);
-    document.documentElement.setAttribute('data-theme', savedTheme);
-  }, []);
+    document.documentElement.setAttribute('data-theme', theme);
+  }, [theme]);
 
   return (
     <div className="app-container">

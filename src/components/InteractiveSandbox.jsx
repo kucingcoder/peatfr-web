@@ -52,6 +52,12 @@ export default function InteractiveSandbox() {
         setRainfall(0);
         setTemperature(38.8);
         break;
+      case 'testing-latest':
+        setWaterTable(-1.04);
+        setSoilMoisture(48.3);
+        setRainfall(0.0);
+        setTemperature(34.2);
+        break;
       default:
         break;
     }
@@ -154,6 +160,14 @@ export default function InteractiveSandbox() {
                 onClick={() => applyPreset('extreme')}
               >
                 El Niño Ekstrem
+              </button>
+              <button
+                type="button"
+                className="btn btn-secondary"
+                style={{ padding: '6px 12px', minHeight: '38px', fontSize: '0.82rem', borderColor: 'var(--color-moss)' }}
+                onClick={() => applyPreset('testing-latest')}
+              >
+                Titik Akhir Data Testing.csv
               </button>
             </div>
           </div>

@@ -170,7 +170,6 @@ export function optimizeParameters(WT, SM, Rf, Temp, R0 = 3000, dt = 1) {
 
 // 7. Klasifikasi Kategori Risiko Kebakaran Gambut
 export function getPFVIRiskCategory(val) {
-  const rounded = Math.round(val);
   if (val <= 75) {
     return {
       level: 'Rendah (Low)',

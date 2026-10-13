@@ -19,11 +19,12 @@ devtools::install_github("mellygsln/peatfr", dependencies = TRUE)
 # 2. Muat pustaka
 library(peatfr)
 
-# 3. Contoh Vektor Sensor Gambut (dengan missing values NA)
-WT <- c(-0.22, -0.26, -0.31, NA, -0.39, -0.44, -0.48, -0.52, -0.56, -0.61, NA, -0.69)
-SM <- c(62.4, 59.8, 56.1, NA, 48.5, 45.2, 42.0, 39.4, 37.8, 36.1, NA, 33.5)
-Rf <- c(12.4, 0.0, 0.0, NA, 0.0, 0.0, 1.2, 0.0, 0.0, 0.0, NA, 0.0)
-Temp <- c(30.5, 31.2, 32.0, NA, 32.8, 33.5, 33.9, 34.2, 34.6, 35.0, NA, 35.8)
+# 3. Muat Data Testing dari CSV (src/assets/Data Testing.csv)
+data_testing <- read.csv("Data Testing.csv")
+WT <- data_testing$Water.Table..meter.
+SM <- data_testing$Soil.Moisture....
+Rf <- data_testing$Rainfall..milimeter.
+Temp <- data_testing$Temperature...C.
 
 # 4. Jalankan Prediksi Menyeluruh (Imputasi k-NN + Peramalan ARIMA + Optimasi Nelder-Mead)
 hasil <- autopeatfr(

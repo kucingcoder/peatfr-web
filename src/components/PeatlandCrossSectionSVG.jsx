@@ -6,6 +6,9 @@ import React, { useState } from 'react';
  * Memvisualisasikan kanopi hutan, lapisan fibrik-hemik-saprik,
  * fluktuasi muka air tanah, garis kritis PP 57/2016 (-0.4m),
  * serta bahaya bara api bawah tanah (smoldering fire).
+ *
+ * Label lapisan dirender di atas lapisan air dengan kontras tinggi (WCAG AAA)
+ * sehingga tetap terbaca sangat jelas dan tajam saat air penuh.
  */
 export default function PeatlandCrossSectionSVG({
   waterTable = -0.55, // meter, e.g. -0.1 to -1.5
@@ -22,7 +25,7 @@ export default function PeatlandCrossSectionSVG({
   const groundY = 160;
   const bottomY = 460;
   const pixelsPerMeter = 200;
-  
+
   // Kedalaman muka air tanah (WT biasanya negatif, misal -0.65m)
   const currentDepthM = Math.max(0, Math.min(1.5, Math.abs(waterTable)));
   const waterLevelY = groundY + currentDepthM * pixelsPerMeter;
@@ -45,7 +48,7 @@ export default function PeatlandCrossSectionSVG({
             Visualisasi interaktif muka air tanah dan zonasi kedalaman gambut
           </p>
         </div>
-        
+
         {/* Status Indikator PP 57/2016 */}
         <div style={{
           display: 'inline-flex',
@@ -75,25 +78,30 @@ export default function PeatlandCrossSectionSVG({
         style={{ width: '100%', height: 'auto', borderRadius: '12px', background: 'var(--bg-primary)' }}
       >
         <defs>
+          {/* Shadow Filter untuk Label agar Selalu Kontras Maksimal */}
+          <filter id="labelShadow" x="-10%" y="-15%" width="125%" height="135%">
+            <feDropShadow dx="0" dy="3" stdDeviation="4" floodColor="#000000" floodOpacity="0.75" />
+          </filter>
+
           {/* Gradient Langit */}
           <linearGradient id="skyGrad" x1="0%" y1="0%" x2="0%" y2="100%">
             <stop offset="0%" stopColor="#0d1b14" />
             <stop offset="100%" stopColor="#1a2d22" />
           </linearGradient>
 
-          {/* Gradient Lapisan Fibrik (Kering vs Basah) */}
+          {/* Gradient Lapisan Fibrik (0 - 40 cm) */}
           <linearGradient id="fibricDryGrad" x1="0%" y1="0%" x2="0%" y2="100%">
             <stop offset="0%" stopColor="#633924" />
             <stop offset="100%" stopColor="#4e2c1a" />
           </linearGradient>
 
-          {/* Gradient Lapisan Hemik */}
+          {/* Gradient Lapisan Hemik (40 - 120 cm) */}
           <linearGradient id="hemicGrad" x1="0%" y1="0%" x2="0%" y2="100%">
             <stop offset="0%" stopColor="#3d2113" />
             <stop offset="100%" stopColor="#2c170d" />
           </linearGradient>
 
-          {/* Gradient Lapisan Saprik */}
+          {/* Gradient Lapisan Saprik (> 120 cm) */}
           <linearGradient id="sapricGrad" x1="0%" y1="0%" x2="0%" y2="100%">
             <stop offset="0%" stopColor="#241108" />
             <stop offset="100%" stopColor="#140803" />
@@ -101,9 +109,9 @@ export default function PeatlandCrossSectionSVG({
 
           {/* Gradient Zona Jenuh Air Gambut */}
           <linearGradient id="peatWaterGrad" x1="0%" y1="0%" x2="0%" y2="100%">
-            <stop offset="0%" stopColor="#0284c7" stopOpacity="0.88" />
-            <stop offset="30%" stopColor="#0369a1" stopOpacity="0.9" />
-            <stop offset="100%" stopColor="#082f49" stopOpacity="0.95" />
+            <stop offset="0%" stopColor="#0284c7" stopOpacity="0.84" />
+            <stop offset="35%" stopColor="#0369a1" stopOpacity="0.88" />
+            <stop offset="100%" stopColor="#075985" stopOpacity="0.94" />
           </linearGradient>
 
           {/* Pattern Serat Gambut Organik */}
@@ -168,58 +176,24 @@ export default function PeatlandCrossSectionSVG({
         <line x1="0" y1={groundY} x2="680" y2={groundY} stroke="#15803d" strokeWidth="4" />
         <rect x="0" y={groundY} width="680" height="8" fill="#166534" opacity="0.6" />
 
-        {/* 2. LAPISAN TANAH GAMBUT (Y: 160 - 460) */}
-        {/* Lapisan Fibrik (0 - 40 cm -> Y: 160 s/d 240) */}
-        <g
-          onClick={() => setSelectedLayer({
-            title: 'Lapisan Gambut Fibrik (0 - 40 cm)',
-            desc: 'Lapisan gambut paling atas dengan dekomposisi rendah. Mengandung serat tumbuhan utuh, sangat berpori. Jika muka air tanah turun di bawah lapisan ini, gambut cepat mengering dan menjadi bahan bakar potensial.'
-          })}
-          style={{ cursor: 'pointer' }}
-        >
+        {/* 2. LATAR MATRIKS TANAH GAMBUT (Y: 160 - 460) */}
+        {/* Lapisan Fibrik Matriks (0 - 40 cm -> Y: 160 s/d 240) */}
+        <g id="fibricLayerBg">
           <rect x="0" y="160" width="680" height="80" fill="url(#fibricDryGrad)" />
           <rect x="0" y="160" width="680" height="80" fill="url(#peatFibers)" />
-          <text x="14" y="195" fill="#f5d0b5" fontSize="12" fontWeight="700">
-            Lapisan Fibrik (0 s/d 40 cm)
-          </text>
-          <text x="14" y="215" fill="#d4a383" fontSize="10">
-            Porositas tinggi, dekomposisi awal
-          </text>
         </g>
 
-        {/* Lapisan Hemik (40 - 120 cm -> Y: 240 s/d 400) */}
-        <g
-          onClick={() => setSelectedLayer({
-            title: 'Lapisan Gambut Hemik (40 - 120 cm)',
-            desc: 'Lapisan gambut peralihan dengan dekomposisi sedang. Sebagian serat telah hancur membentuk massa amorf. Menjadi zona penahan air utama di kawasan kubah gambut.'
-          })}
-          style={{ cursor: 'pointer' }}
-        >
+        {/* Lapisan Hemik Matriks (40 - 120 cm -> Y: 240 s/d 400) */}
+        <g id="hemicLayerBg">
           <rect x="0" y="240" width="680" height="160" fill="url(#hemicGrad)" />
           <rect x="0" y="240" width="680" height="160" fill="url(#peatFibers)" opacity="0.7" />
-          <text x="14" y="300" fill="#e0b89b" fontSize="12" fontWeight="700">
-            Lapisan Hemik (40 s/d 120 cm)
-          </text>
-          <text x="14" y="320" fill="#b08365" fontSize="10">
-            Dekomposisi sedang, penahan air
-          </text>
+          <line x1="0" y1="240" x2="680" y2="240" stroke="rgba(255, 255, 255, 0.15)" strokeWidth="1" strokeDasharray="4 4" />
         </g>
 
-        {/* Lapisan Saprik (> 120 cm -> Y: 400 s/d 460) */}
-        <g
-          onClick={() => setSelectedLayer({
-            title: 'Lapisan Gambut Saprik (> 120 cm)',
-            desc: 'Lapisan gambut terdalam dengan tingkat kematangan tinggi (dekomposisi lanjut). Menyerupai lumpur hitam padat dengan kandungan karbon organik sangat tinggi.'
-          })}
-          style={{ cursor: 'pointer' }}
-        >
+        {/* Lapisan Saprik Matriks (> 120 cm -> Y: 400 s/d 460) */}
+        <g id="sapricLayerBg">
           <rect x="0" y="400" width="680" height="60" fill="url(#sapricGrad)" />
-          <text x="14" y="435" fill="#c49b80" fontSize="12" fontWeight="700">
-            Lapisan Saprik (&gt; 120 cm)
-          </text>
-          <text x="14" y="452" fill="#8f6347" fontSize="10">
-            Dekomposisi lanjut, endapan karbon masif
-          </text>
+          <line x1="0" y1="400" x2="680" y2="400" stroke="rgba(255, 255, 255, 0.15)" strokeWidth="1" strokeDasharray="4 4" />
         </g>
 
         {/* 3. ZONA JENUH AIR GAMBUT (Di Bawah Muka Air Tanah Y = waterLevelY) */}
@@ -237,7 +211,17 @@ export default function PeatlandCrossSectionSVG({
               d={`M0,${waterLevelY} Q170,${waterLevelY - 3} 340,${waterLevelY} T680,${waterLevelY}`}
               fill="none"
               stroke="#38bdf8"
-              strokeWidth="3"
+              strokeWidth="3.5"
+            />
+            <line
+              x1="0"
+              y1={waterLevelY}
+              x2="680"
+              y2={waterLevelY}
+              stroke="#7dd3fc"
+              strokeWidth="1"
+              strokeDasharray="6 3"
+              opacity="0.8"
             />
           </g>
         )}
@@ -253,8 +237,18 @@ export default function PeatlandCrossSectionSVG({
             strokeWidth="2.5"
             strokeDasharray="8 6"
           />
-          <rect x="440" y={criticalY - 14} width="225" height="24" rx="4" fill="rgba(15, 23, 42, 0.85)" stroke="#f97316" strokeWidth="1" />
-          <text x="450" y={criticalY + 2} fill="#fdba74" fontSize="11" fontWeight="700">
+          <rect
+            x="440"
+            y={criticalY - 14}
+            width="225"
+            height="26"
+            rx="6"
+            fill="rgba(15, 23, 42, 0.92)"
+            stroke="#f97316"
+            strokeWidth="1.2"
+            filter="url(#labelShadow)"
+          />
+          <text x="452" y={criticalY + 3} fill="#fdba74" fontSize="11" fontWeight="700">
             Batas Kritis PP 57/2016: -0.4 m
           </text>
         </g>
@@ -262,7 +256,6 @@ export default function PeatlandCrossSectionSVG({
         {/* 5. INDIKATOR BARA API BAWAH TANAH (Smoldering Fire) JIKA SANGAT KERING */}
         {isExtremeDrying && (
           <g id="smolderingEmbers">
-            {/* Bara Api di lapisan kering antara muka tanah dan muka air */}
             <circle cx="200" cy="190" r="14" fill="#ef4444" fillOpacity="0.4" />
             <circle cx="200" cy="190" r="8" fill="#f97316" />
             <circle cx="200" cy="190" r="4" fill="#fef08a" />
@@ -281,38 +274,142 @@ export default function PeatlandCrossSectionSVG({
             <path d="M490,185 Q480,155 495,125 T490,95" fill="none" stroke="#94a3b8" strokeWidth="2.5" opacity="0.6" strokeDasharray="4 4" />
 
             {/* Kotak Peringatan Bara Api */}
-            <rect x="220" y="80" width="220" height="28" rx="6" fill="#ef4444" />
+            <rect x="220" y="80" width="220" height="28" rx="6" fill="#ef4444" filter="url(#labelShadow)" />
             <text x="232" y="98" fill="#ffffff" fontSize="11" fontWeight="800">
               BAHAYA: Bara Gambut Bawah Tanah!
             </text>
           </g>
         )}
 
-        {/* 6. LABEL & PENANDA MUKA AIR TANAH AKTIF */}
-        <g id="waterTableBadge" transform={`translate(15, ${Math.min(bottomY - 28, Math.max(groundY + 8, waterLevelY - 14))})`}>
-          <rect x="0" y="0" width="230" height="28" rx="6" fill="#0284c7" stroke="#38bdf8" strokeWidth="1.5" />
-          <text x="10" y="18" fill="#ffffff" fontSize="12" fontWeight="700" fontFamily="var(--font-mono)">
+        {/* 6. LABEL KARTU LAPISAN GAMBUT (DIRENDER DI ATAS AIR DENGAN KONTRAS TINGGI) */}
+        <g id="layerLabelsLayer">
+          {/* Label Lapisan Fibrik (0 - 40 cm) */}
+          <g
+            onClick={() => setSelectedLayer({
+              title: 'Lapisan Gambut Fibrik (0 - 40 cm)',
+              desc: 'Lapisan gambut paling atas dengan dekomposisi rendah. Mengandung serat tumbuhan utuh, sangat berpori. Jika muka air tanah turun di bawah lapisan ini, gambut cepat mengering dan menjadi bahan bakar potensial.'
+            })}
+            style={{ cursor: 'pointer' }}
+          >
+            <rect
+              x="14"
+              y="174"
+              width="240"
+              height="48"
+              rx="8"
+              fill="rgba(12, 22, 17, 0.92)"
+              stroke="rgba(251, 191, 36, 0.45)"
+              strokeWidth="1.2"
+              filter="url(#labelShadow)"
+            />
+            {/* Strip Aksen Warna Amber */}
+            <rect x="14" y="174" width="4.5" height="48" rx="2" fill="#f59e0b" />
+            <text x="26" y="194" fill="#ffffff" fontSize="12" fontWeight="700">
+              Lapisan Fibrik (0 s/d 40 cm)
+            </text>
+            <text x="26" y="210" fill="#fde68a" fontSize="10.5" fontWeight="500">
+              Porositas tinggi, dekomposisi awal
+            </text>
+          </g>
+
+          {/* Label Lapisan Hemik (40 - 120 cm) */}
+          <g
+            onClick={() => setSelectedLayer({
+              title: 'Lapisan Gambut Hemik (40 - 120 cm)',
+              desc: 'Lapisan gambut peralihan dengan dekomposisi sedang. Sebagian serat telah hancur membentuk massa amorf. Menjadi zona penahan air utama di kawasan kubah gambut.'
+            })}
+            style={{ cursor: 'pointer' }}
+          >
+            <rect
+              x="14"
+              y="294"
+              width="240"
+              height="48"
+              rx="8"
+              fill="rgba(12, 22, 17, 0.92)"
+              stroke="rgba(56, 189, 248, 0.5)"
+              strokeWidth="1.2"
+              filter="url(#labelShadow)"
+            />
+            {/* Strip Aksen Warna Cyan Air */}
+            <rect x="14" y="294" width="4.5" height="48" rx="2" fill="#38bdf8" />
+            <text x="26" y="314" fill="#ffffff" fontSize="12" fontWeight="700">
+              Lapisan Hemik (40 s/d 120 cm)
+            </text>
+            <text x="26" y="330" fill="#bae6fd" fontSize="10.5" fontWeight="500">
+              Dekomposisi sedang, penahan air
+            </text>
+          </g>
+
+          {/* Label Lapisan Saprik (> 120 cm) */}
+          <g
+            onClick={() => setSelectedLayer({
+              title: 'Lapisan Gambut Saprik (> 120 cm)',
+              desc: 'Lapisan gambut terdalam dengan tingkat kematangan tinggi (dekomposisi lanjut). Menyerupai lumpur hitam padat dengan kandungan karbon organik sangat tinggi.'
+            })}
+            style={{ cursor: 'pointer' }}
+          >
+            <rect
+              x="14"
+              y="408"
+              width="240"
+              height="44"
+              rx="8"
+              fill="rgba(12, 22, 17, 0.92)"
+              stroke="rgba(192, 132, 252, 0.5)"
+              strokeWidth="1.2"
+              filter="url(#labelShadow)"
+            />
+            {/* Strip Aksen Warna Ungu Karbon */}
+            <rect x="14" y="408" width="4.5" height="44" rx="2" fill="#c084fc" />
+            <text x="26" y="426" fill="#ffffff" fontSize="12" fontWeight="700">
+              Lapisan Saprik (&gt; 120 cm)
+            </text>
+            <text x="26" y="442" fill="#e9d5ff" fontSize="10.5" fontWeight="500">
+              Dekomposisi lanjut, endapan karbon masif
+            </text>
+          </g>
+        </g>
+
+        {/* 7. LABEL & PENANDA MUKA AIR TANAH AKTIF (Diposisikan di Kanal Tengah x = 265) */}
+        <g
+          id="waterTableBadge"
+          transform={`translate(265, ${Math.min(bottomY - 32, Math.max(groundY + 8, waterLevelY - 16))})`}
+          filter="url(#labelShadow)"
+        >
+          <rect
+            x="0"
+            y="0"
+            width="220"
+            height="30"
+            rx="7"
+            fill="#0284c7"
+            stroke="#7dd3fc"
+            strokeWidth="1.5"
+          />
+          <circle cx="14" cy="15" r="4" fill="#38bdf8" />
+          <text x="26" y="19" fill="#ffffff" fontSize="11.5" fontWeight="700" fontFamily="var(--font-mono)">
             Muka Air: {waterTable.toFixed(2)} m ({Math.round(currentDepthM * 100)} cm)
           </text>
         </g>
 
-        {/* Skala Kedalaman Penggaris Metrik (Sisi Kanan) */}
+        {/* Skala Kedalaman Penggaris Metrik (Sisi Kanan) dengan Kontras Tinggi */}
         <g id="rulerScale" transform="translate(640, 0)">
-          <line x1="0" y1="160" x2="0" y2="460" stroke="var(--border-medium)" strokeWidth="2" />
-          <line x1="-8" y1="160" x2="0" y2="160" stroke="#16a34a" strokeWidth="2" />
-          <text x="-32" y="164" fill="var(--text-secondary)" fontSize="10" fontWeight="700">0.0m</text>
+          <line x1="0" y1="160" x2="0" y2="460" stroke="rgba(255, 255, 255, 0.45)" strokeWidth="2" />
+          <line x1="-8" y1="160" x2="0" y2="160" stroke="#22c55e" strokeWidth="2.5" />
+          <text x="-34" y="164" fill="#ffffff" fontSize="10.5" fontWeight="700" filter="url(#labelShadow)">0.0m</text>
 
-          <line x1="-8" y1="240" x2="0" y2="240" stroke="#f97316" strokeWidth="2" />
-          <text x="-36" y="244" fill="#f97316" fontSize="10" fontWeight="700">-0.4m</text>
+          <line x1="-8" y1="240" x2="0" y2="240" stroke="#f97316" strokeWidth="2.5" />
+          <text x="-38" y="244" fill="#fed7aa" fontSize="10.5" fontWeight="700" filter="url(#labelShadow)">-0.4m</text>
 
-          <line x1="-8" y1="320" x2="0" y2="320" stroke="var(--border-medium)" strokeWidth="1.5" />
-          <text x="-36" y="324" fill="var(--text-muted)" fontSize="10">-0.8m</text>
+          <line x1="-8" y1="320" x2="0" y2="320" stroke="rgba(255, 255, 255, 0.4)" strokeWidth="1.5" />
+          <text x="-38" y="324" fill="#e2e8f0" fontSize="10" fontWeight="600" filter="url(#labelShadow)">-0.8m</text>
 
-          <line x1="-8" y1="400" x2="0" y2="400" stroke="var(--border-medium)" strokeWidth="1.5" />
-          <text x="-36" y="404" fill="var(--text-muted)" fontSize="10">-1.2m</text>
+          <line x1="-8" y1="400" x2="0" y2="400" stroke="rgba(255, 255, 255, 0.4)" strokeWidth="1.5" />
+          <text x="-38" y="404" fill="#e2e8f0" fontSize="10" fontWeight="600" filter="url(#labelShadow)">-1.2m</text>
 
-          <line x1="-8" y1="460" x2="0" y2="460" stroke="var(--border-medium)" strokeWidth="2" />
-          <text x="-36" y="464" fill="var(--text-secondary)" fontSize="10" fontWeight="700">-1.5m</text>
+          <line x1="-8" y1="460" x2="0" y2="460" stroke="rgba(255, 255, 255, 0.45)" strokeWidth="2" />
+          <text x="-38" y="464" fill="#ffffff" fontSize="10.5" fontWeight="700" filter="url(#labelShadow)">-1.5m</text>
         </g>
       </svg>
 

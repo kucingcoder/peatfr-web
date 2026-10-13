@@ -27,9 +27,9 @@ Aplikasi web interaktif untuk pemantauan hidrologi lahan gambut, simulasi fluktu
    - Menampilkan plot kurva penuh dan **Zoom-in 25 titik terakhir** (standar khas paket R `peatfr`).
    - Metrik evaluasi performa model: RMSE, MAE, dan AIC.
 
-5. **Eksplorasi Data Lapangan & Unggah CSV**
-   - Tiga stasiun pengamatan gambut benchmark: Semenanjung Kampar (Riau), Sebangau (Kalimantan Tengah), dan Taman Nasional Berbak (Jambi).
-   - Fitur unggah berkas CSV kustom pengguna secara langsung.
+5. **Dataset Pengujian Sensor & Unggah CSV**
+   - Menggunakan dataset riil dari berkas `src/assets/Data Testing.csv` (192 baris rekaman sensor tanpa data fiktif).
+   - Fitur unggah berkas CSV telemetri kustom pengguna secara langsung.
    - Algoritma optimasi simplex Nelder-Mead untuk kalibrasi otomatis parameter Van Genuchten [aH, bH, n, alpha].
    - Fitur ekspor hasil analisis lengkap ke berkas CSV.
 
